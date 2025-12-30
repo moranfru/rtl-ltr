@@ -30,6 +30,7 @@
 
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
+    el.style.setProperty('align-items', 'flex-start', 'important');
 
     const style = window.getComputedStyle(el);
     const ml = style.marginLeft;
