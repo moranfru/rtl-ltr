@@ -1,0 +1,24 @@
+name: Purge CDN Cache
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'rtl-ltr.js'
+
+jobs:
+  purge-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Purge jsDelivr Cache
+        run: |
+          echo "Purging jsDelivr cache for rtl-ltr.js..."
+          curl -X POST "https://purge.jsdelivr.net/gh/moranfru/rtl-ltr/rtl-ltr.js"
+          
+      - name: Verify Purge
+        run: |
+          echo "Waiting 2 seconds for purge to propagate..."
+          sleep 2
+          echo "Cache purge completed. The CDN should now serve the latest version."
+
