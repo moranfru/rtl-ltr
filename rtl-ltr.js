@@ -1,3 +1,4 @@
+//cdn cache check v1
 (function() {
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
