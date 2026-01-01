@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v9');
+  console.log('rtl-ltr.js v10');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -20,6 +20,20 @@
   styleHide.innerHTML = `body { opacity: 0 !important; transition: none !important; }`;
   document.head.appendChild(styleHide);
 
+  // Fix CSS custom property --namePriceLayoutAlignItems
+  const fixAlignItemsProperty = (el) => {
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      const alignItemsValue = computedStyle.getPropertyValue('--namePriceLayoutAlignItems');
+      
+      if (alignItemsValue && alignItemsValue.trim() === 'flex-end') {
+        el.style.setProperty('--namePriceLayoutAlignItems', 'flex-start', 'important');
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
   const processElement = (el) => {
     if (!el || !el.className || typeof el.className !== 'string') return;
     
@@ -32,6 +46,9 @@
 
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
+
+    // Fix CSS custom property --namePriceLayoutAlignItems
+    fixAlignItemsProperty(el);
 
     const style = window.getComputedStyle(el);
     const ml = style.marginLeft;
@@ -64,6 +81,25 @@
         if (node.nodeType === 1) {
           processElement(node);
           node.querySelectorAll(dynamicSelector).forEach(processElement);
+          
+          // Process style elements
+          if (node.tagName === 'STYLE' || node.querySelectorAll) {
+            const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
+            styleElements.forEach(styleEl => {
+              let cssText = styleEl.textContent || styleEl.innerHTML;
+              if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-end')) {
+                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end/g, '--namePriceLayoutAlignItems: flex-start');
+                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end\s*;/g, '--namePriceLayoutAlignItems: flex-start;');
+                
+                if (styleEl.textContent !== undefined) {
+                  styleEl.textContent = cssText;
+                } else {
+                  styleEl.innerHTML = cssText;
+                }
+                styleEl.dataset.rtlProcessed = 'true';
+              }
+            });
+          }
         }
       });
     }
@@ -74,9 +110,30 @@
     subtree: true
   });
 
+  // Process style elements to fix CSS custom properties
+  const processStyleElements = () => {
+    document.querySelectorAll('style').forEach(styleEl => {
+      if (styleEl.dataset.rtlProcessed === 'true') return;
+      
+      let cssText = styleEl.textContent || styleEl.innerHTML;
+      if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-end')) {
+        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end/g, '--namePriceLayoutAlignItems: flex-start');
+        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end\s*;/g, '--namePriceLayoutAlignItems: flex-start;');
+        
+        if (styleEl.textContent !== undefined) {
+          styleEl.textContent = cssText;
+        } else {
+          styleEl.innerHTML = cssText;
+        }
+        styleEl.dataset.rtlProcessed = 'true';
+      }
+    });
+  };
+
   // 4. REVEAL BODY
   const revealBody = () => {
     document.querySelectorAll(dynamicSelector).forEach(processElement);
+    processStyleElements();
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
   };
