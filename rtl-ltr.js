@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v11');
+  console.log('rtl-ltr.js v12');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -34,33 +34,27 @@
     }
   };
 
-  // Handle wixui-rich-text child elements text-align
+  // Handle wixui-rich-text__text text-align
   const processRichTextChildren = (el) => {
     if (!el.className || typeof el.className !== 'string') return;
     
-    // Check if element has wixui-rich-text class
-    if (!el.className.includes('wixui-rich-text')) return;
+    // Check if element has wixui-rich-text__text class
+    if (!el.className.includes('wixui-rich-text__text')) return;
     
-    // Process child elements: p, h tags, ul, ol
-    const childSelectors = 'p, h1, h2, h3, h4, h5, h6, ul, ol';
-    const children = el.querySelectorAll(childSelectors);
+    // Skip if already processed
+    if (el.dataset.rtlTextAlignFixed === 'true') return;
     
-    children.forEach(child => {
-      // Skip if already processed
-      if (child.dataset.rtlTextAlignFixed === 'true') return;
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      const textAlign = computedStyle.getPropertyValue('text-align');
       
-      try {
-        const computedStyle = window.getComputedStyle(child);
-        const textAlign = computedStyle.getPropertyValue('text-align');
-        
-        if (textAlign && textAlign.trim() === 'left') {
-          child.style.setProperty('text-align', 'right', 'important');
-          child.dataset.rtlTextAlignFixed = 'true';
-        }
-      } catch (error) {
-        // Silently ignore errors
+      if (textAlign && textAlign.trim() === 'right') {
+        el.style.setProperty('text-align', 'left', 'important');
+        el.dataset.rtlTextAlignFixed = 'true';
       }
-    });
+    } catch (error) {
+      // Silently ignore errors
+    }
   };
 
   const processElement = (el) => {
