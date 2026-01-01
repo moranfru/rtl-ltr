@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v5');
+  console.log('rtl-ltr.js v6');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
