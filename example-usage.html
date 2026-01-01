@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTL-LTR Version Check Example</title>
+  
+  <!-- Option 1: Inline version checker (simplest) -->
+  <script>
+    // Check latest version
+    (function() {
+      const REPO = 'moranfru/rtl-ltr';
+      const BRANCH = 'main';
+      
+      fetch(`https://api.github.com/repos/${REPO}/branches/${BRANCH}`)
+        .then(r => r.json())
+        .then(data => {
+          const latestSha = data.commit.sha.substring(0, 7);
+          const scripts = document.querySelectorAll('script[src*="rtl-ltr.js"]');
+          const currentScript = scripts[scripts.length - 1];
+          const urlMatch = currentScript?.src.match(/\/([a-f0-9]{7,40})\/rtl-ltr\.js/);
+          
+          if (urlMatch) {
+            const currentSha = urlMatch[1].substring(0, 7);
+            if (currentSha !== latestSha) {
+              console.warn(`⚠️ New version available! Current: ${currentSha}, Latest: ${latestSha}`);
+              // Optionally show notification to user
+              // alert(`New version available! Please refresh the page.`);
+            } else {
+              console.log(`✅ Latest version: ${latestSha}`);
+            }
+          } else {
+            console.log(`Latest version: ${latestSha} (using branch URL)`);
+          }
+        })
+        .catch(err => console.error('Version check failed:', err));
+    })();
+  </script>
+  
+  <!-- Your RTL-LTR script -->
+  <script src="https://cdn.jsdelivr.net/gh/moranfru/rtl-ltr/rtl-ltr.js"></script>
+  
+  <!-- Option 2: Use the external version checker script -->
+  <!-- <script src="check-latest-version.js"></script> -->
+</head>
+<body>
+  <h1>RTL-LTR Version Check Example</h1>
+  <p>Open the browser console to see version information.</p>
+  
+  <script>
+    // Listen for version update events (if using check-latest-version.js)
+    window.addEventListener('rtl-ltr-version-update', function(event) {
+      console.log('Version update detected:', event.detail);
+      // You can show a notification or auto-reload here
+    });
+  </script>
+</body>
+</html>
+
