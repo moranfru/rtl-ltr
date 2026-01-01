@@ -1,5 +1,6 @@
-//cdn cache check v4
+
 (function() {
+  console.log('rtl-ltr.js v5');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
