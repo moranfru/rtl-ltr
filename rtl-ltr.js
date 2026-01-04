@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v16');
+  console.log('rtl-ltr.js v17');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -36,7 +36,7 @@
 
   // Handle wixui-rich-text__text text-align for specific tags
   // These texts should remain left-aligned while other elements are swapped to RTL
-  // Only change to left if the original LTR version was explicitly right
+  // Only change to left if the original LTR version was explicitly right (not 'start')
   const processRichTextChildren = (el) => {
     if (!el || !el.className || typeof el.className !== 'string') return;
     
@@ -52,8 +52,8 @@
     if (el.dataset.rtlTextAlignFixed === 'true') return;
     
     try {
-      // Check if text-align is explicitly set to 'right' (not computed from 'start')
-      // First check inline style
+      // Only process if text-align is explicitly set to 'right' in inline style
+      // This avoids the issue where 'start' computes to 'right' in RTL
       const inlineTextAlign = el.style.textAlign;
       if (inlineTextAlign && inlineTextAlign.trim() === 'right') {
         el.style.setProperty('text-align', 'left', 'important');
@@ -61,38 +61,33 @@
         return;
       }
       
-      // If no inline style, check computed value by temporarily checking with LTR direction
-      // to see what the original value was (to distinguish 'start' from 'right')
+      // For stylesheet values, check by creating a test scenario
+      // Create a hidden clone with LTR to check original value
+      const testEl = document.createElement(tagName);
+      testEl.className = el.className;
+      testEl.style.visibility = 'hidden';
+      testEl.style.position = 'absolute';
+      testEl.style.top = '-9999px';
+      testEl.style.direction = 'ltr';
+      // Copy computed styles that might affect text-align inheritance
       const computedStyle = window.getComputedStyle(el);
-      const currentDirection = computedStyle.direction;
-      const hadInlineDirection = el.style.direction !== '';
+      testEl.style.fontSize = computedStyle.fontSize;
+      testEl.style.fontFamily = computedStyle.fontFamily;
+      testEl.style.display = computedStyle.display;
+      document.body.appendChild(testEl);
       
-      // Temporarily set to LTR to check original text-align value
-      if (currentDirection === 'rtl') {
-        el.style.direction = 'ltr';
-        const ltrComputedStyle = window.getComputedStyle(el);
-        const ltrTextAlign = ltrComputedStyle.getPropertyValue('text-align');
-        
-        // Restore original direction
-        if (!hadInlineDirection) {
-          el.style.direction = '';
-        } else {
-          el.style.direction = currentDirection;
-        }
-        
-        // Only change to left if the original LTR version was explicitly 'right'
-        // Not if it was 'start' (which computes to right in RTL)
-        if (ltrTextAlign && ltrTextAlign.trim() === 'right') {
-          el.style.setProperty('text-align', 'left', 'important');
-          el.dataset.rtlTextAlignFixed = 'true';
-        }
-      } else {
-        // Already LTR, check directly
-        const textAlign = computedStyle.getPropertyValue('text-align');
-        if (textAlign && textAlign.trim() === 'right') {
-          el.style.setProperty('text-align', 'left', 'important');
-          el.dataset.rtlTextAlignFixed = 'true';
-        }
+      // Get computed text-align in LTR context
+      const testComputedStyle = window.getComputedStyle(testEl);
+      const ltrTextAlign = testComputedStyle.getPropertyValue('text-align');
+      
+      // Clean up
+      document.body.removeChild(testEl);
+      
+      // Only change to left if the original LTR version was explicitly 'right'
+      // If it was 'start', 'left', or 'center', don't change it
+      if (ltrTextAlign && ltrTextAlign.trim() === 'right') {
+        el.style.setProperty('text-align', 'left', 'important');
+        el.dataset.rtlTextAlignFixed = 'true';
       }
     } catch (error) {
       // Silently ignore errors
