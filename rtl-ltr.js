@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v18');
+  console.log('rtl-ltr.js v19');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -35,36 +35,12 @@
   };
 
   // Handle wixui-rich-text__text text-align for specific tags
-  // These texts should remain left-aligned while other elements are swapped to RTL
-  // Only change to left if text-align is explicitly set to 'right' in inline style
-  // (We skip stylesheet values to avoid performance issues and because we can't reliably
-  // distinguish 'start' from 'right' without expensive DOM operations)
+  // DISABLED: Can't reliably distinguish 'start' from 'right' without expensive DOM operations
+  // and causes performance issues. Only inline styles with explicit 'right' would be processed,
+  // but this feature is disabled to avoid unintended side effects.
   const processRichTextChildren = (el) => {
-    if (!el || !el.className || typeof el.className !== 'string') return;
-    
-    // Check if element has wixui-rich-text__text class
-    if (!el.className.includes('wixui-rich-text__text')) return;
-    
-    // Only process specific tag types: p, h1-h6, ul, ol, s
-    const tagName = el.tagName.toLowerCase();
-    const allowedTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 's'];
-    if (!allowedTags.includes(tagName)) return;
-    
-    // Skip if already processed
-    if (el.dataset.rtlTextAlignFixed === 'true') return;
-    
-    try {
-      // Only process if text-align is explicitly set to 'right' in inline style
-      // This avoids the issue where 'start' computes to 'right' in RTL
-      // and avoids expensive DOM operations that block page load
-      const inlineTextAlign = el.style.textAlign;
-      if (inlineTextAlign && inlineTextAlign.trim() === 'right') {
-        el.style.setProperty('text-align', 'left', 'important');
-        el.dataset.rtlTextAlignFixed = 'true';
-      }
-    } catch (error) {
-      // Silently ignore errors
-    }
+    // Function disabled - return immediately
+    return;
   };
   
   // Process all wixui-rich-text__text elements in the document
@@ -122,8 +98,8 @@
     // Fix CSS custom property --namePriceLayoutAlignItems
     fixAlignItemsProperty(el);
 
-    // Handle wixui-rich-text__text child elements (if this element contains them)
-    processRichTextChildren(el);
+    // Handle wixui-rich-text__text child elements (disabled - can't reliably detect start vs right)
+    // processRichTextChildren(el);
 
     const style = window.getComputedStyle(el);
     const ml = style.marginLeft;
@@ -157,12 +133,12 @@
           processElement(node);
           node.querySelectorAll(dynamicSelector).forEach(processElement);
           
-          // Process rich text elements
-          processRichTextChildren(node);
-          if (node.querySelectorAll) {
-            const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, s.wixui-rich-text__text';
-            node.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
-          }
+          // Process rich text elements (disabled - can't reliably detect start vs right)
+          // processRichTextChildren(node);
+          // if (node.querySelectorAll) {
+          //   const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, s.wixui-rich-text__text';
+          //   node.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
+          // }
           
           // Process text tags with text-align: start
           processStartAlignedElements(node);
@@ -223,7 +199,7 @@
   const revealBody = () => {
     document.querySelectorAll(dynamicSelector).forEach(processElement);
     processStyleElements();
-    processAllRichTextElements();
+    // processAllRichTextElements(); // Disabled - can't reliably detect start vs right without expensive operations
     processAllStartAlignedElements();
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
