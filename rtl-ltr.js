@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v14');
+  console.log('rtl-ltr.js v15');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -69,6 +69,39 @@
     document.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
   };
 
+  // Handle text tags with text-align: start - swap to right for RTL
+  const processStartAlignedElements = (el) => {
+    // Only process specific text tags: p, h1-h6, ul, ol
+    const tagName = el.tagName.toLowerCase();
+    const allowedTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'];
+    if (!allowedTags.includes(tagName)) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlStartAligned === 'true') return;
+    
+    // Skip wixui-rich-text__text elements (handled separately)
+    if (el.className && typeof el.className === 'string' && el.className.includes('wixui-rich-text__text')) return;
+    
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      const textAlign = computedStyle.getPropertyValue('text-align');
+      
+      // If computed text-align is 'start', set to 'right' for RTL
+      if (textAlign && textAlign.trim() === 'start') {
+        el.style.setProperty('text-align', 'right', 'important');
+        el.dataset.rtlStartAligned = 'true';
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all text tags with text-align: start
+  const processAllStartAlignedElements = () => {
+    const textTagSelector = 'p, h1, h2, h3, h4, h5, h6, ul, ol';
+    document.querySelectorAll(textTagSelector).forEach(processStartAlignedElements);
+  };
+
   const processElement = (el) => {
     if (!el || !el.className || typeof el.className !== 'string') return;
     
@@ -127,6 +160,13 @@
             node.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
           }
           
+          // Process text tags with text-align: start
+          processStartAlignedElements(node);
+          if (node.querySelectorAll) {
+            const textTagSelector = 'p, h1, h2, h3, h4, h5, h6, ul, ol';
+            node.querySelectorAll(textTagSelector).forEach(processStartAlignedElements);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -180,6 +220,7 @@
     document.querySelectorAll(dynamicSelector).forEach(processElement);
     processStyleElements();
     processAllRichTextElements();
+    processAllStartAlignedElements();
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
   };
