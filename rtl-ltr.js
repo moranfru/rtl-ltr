@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v12');
+  console.log('rtl-ltr.js v13');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -73,8 +73,9 @@
     // Fix CSS custom property --namePriceLayoutAlignItems
     fixAlignItemsProperty(el);
 
+    // TODO: Uncomment this when we have a way to handle wixui-rich-text child elements
     // Handle wixui-rich-text child elements
-    processRichTextChildren(el);
+    //processRichTextChildren(el);
 
     const style = window.getComputedStyle(el);
     const ml = style.marginLeft;
