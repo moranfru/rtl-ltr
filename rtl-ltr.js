@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v15');
+  console.log('rtl-ltr.js v16');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -36,6 +36,7 @@
 
   // Handle wixui-rich-text__text text-align for specific tags
   // These texts should remain left-aligned while other elements are swapped to RTL
+  // Only change to left if the original LTR version was explicitly right
   const processRichTextChildren = (el) => {
     if (!el || !el.className || typeof el.className !== 'string') return;
     
@@ -51,12 +52,47 @@
     if (el.dataset.rtlTextAlignFixed === 'true') return;
     
     try {
-      const computedStyle = window.getComputedStyle(el);
-      const textAlign = computedStyle.getPropertyValue('text-align');
-      
-      if (textAlign && textAlign.trim() === 'right') {
+      // Check if text-align is explicitly set to 'right' (not computed from 'start')
+      // First check inline style
+      const inlineTextAlign = el.style.textAlign;
+      if (inlineTextAlign && inlineTextAlign.trim() === 'right') {
         el.style.setProperty('text-align', 'left', 'important');
         el.dataset.rtlTextAlignFixed = 'true';
+        return;
+      }
+      
+      // If no inline style, check computed value by temporarily checking with LTR direction
+      // to see what the original value was (to distinguish 'start' from 'right')
+      const computedStyle = window.getComputedStyle(el);
+      const currentDirection = computedStyle.direction;
+      const hadInlineDirection = el.style.direction !== '';
+      
+      // Temporarily set to LTR to check original text-align value
+      if (currentDirection === 'rtl') {
+        el.style.direction = 'ltr';
+        const ltrComputedStyle = window.getComputedStyle(el);
+        const ltrTextAlign = ltrComputedStyle.getPropertyValue('text-align');
+        
+        // Restore original direction
+        if (!hadInlineDirection) {
+          el.style.direction = '';
+        } else {
+          el.style.direction = currentDirection;
+        }
+        
+        // Only change to left if the original LTR version was explicitly 'right'
+        // Not if it was 'start' (which computes to right in RTL)
+        if (ltrTextAlign && ltrTextAlign.trim() === 'right') {
+          el.style.setProperty('text-align', 'left', 'important');
+          el.dataset.rtlTextAlignFixed = 'true';
+        }
+      } else {
+        // Already LTR, check directly
+        const textAlign = computedStyle.getPropertyValue('text-align');
+        if (textAlign && textAlign.trim() === 'right') {
+          el.style.setProperty('text-align', 'left', 'important');
+          el.dataset.rtlTextAlignFixed = 'true';
+        }
       }
     } catch (error) {
       // Silently ignore errors
