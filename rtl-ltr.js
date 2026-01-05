@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v19');
+  console.log('rtl-ltr.js v21');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -34,33 +34,68 @@
     }
   };
 
-  // Handle wixui-rich-text__text text-align for specific tags
-  // DISABLED: Can't reliably distinguish 'start' from 'right' without expensive DOM operations
-  // and causes performance issues. Only inline styles with explicit 'right' would be processed,
-  // but this feature is disabled to avoid unintended side effects.
-  const processRichTextChildren = (el) => {
-    // Function disabled - return immediately
-    return;
+  // Handle wixui-rich-text__text elements: swap text-align right to left, remove inline text-align left
+  const processRichTextElement = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlRichTextFixed === 'true') return;
+    
+    // Check if element has wixui-rich-text__text class
+    if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-rich-text__text')) {
+      return;
+    }
+    
+    // Only process specific tag types: p, h1-h6, ul, ol, span
+    const tagName = el.tagName ? el.tagName.toLowerCase() : '';
+    const allowedTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'span'];
+    if (!allowedTags.includes(tagName)) return;
+    
+    try {
+      // First, remove inline style text-align: left if present (Wix viewer quirk)
+      const inlineTextAlign = el.style.textAlign;
+      if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'left') {
+        el.style.removeProperty('text-align');
+      }
+      
+      // Check computed style for text-align: right
+      const computedStyle = window.getComputedStyle(el);
+      const computedTextAlign = computedStyle.getPropertyValue('text-align');
+      
+      // If text-align is 'right', change it to 'left'
+      if (computedTextAlign && computedTextAlign.trim() === 'right') {
+        el.style.setProperty('text-align', 'left', 'important');
+      }
+      
+      // Mark as processed
+      el.dataset.rtlRichTextFixed = 'true';
+    } catch (error) {
+      // Silently ignore errors
+    }
   };
-  
+
   // Process all wixui-rich-text__text elements in the document
   const processAllRichTextElements = () => {
-    const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, s.wixui-rich-text__text';
-    document.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
+    const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, span.wixui-rich-text__text';
+    document.querySelectorAll(richTextSelector).forEach(processRichTextElement);
   };
 
   // Handle text tags with text-align: start - swap to right for RTL
   const processStartAlignedElements = (el) => {
+    if (!el) return;
+    
+    // Skip wixui-rich-text__text elements - these are handled separately
+    if (el.className && typeof el.className === 'string' && el.className.includes('wixui-rich-text__text')) {
+      return;
+    }
+    
     // Only process specific text tags: p, h1-h6, ul, ol
-    const tagName = el.tagName.toLowerCase();
+    const tagName = el.tagName ? el.tagName.toLowerCase() : '';
     const allowedTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'];
     if (!allowedTags.includes(tagName)) return;
     
     // Skip if already processed
     if (el.dataset.rtlStartAligned === 'true') return;
-    
-    // Skip wixui-rich-text__text elements (handled separately)
-    if (el.className && typeof el.className === 'string' && el.className.includes('wixui-rich-text__text')) return;
     
     try {
       const computedStyle = window.getComputedStyle(el);
@@ -79,7 +114,13 @@
   // Process all text tags with text-align: start
   const processAllStartAlignedElements = () => {
     const textTagSelector = 'p, h1, h2, h3, h4, h5, h6, ul, ol';
-    document.querySelectorAll(textTagSelector).forEach(processStartAlignedElements);
+    document.querySelectorAll(textTagSelector).forEach(el => {
+      // Skip wixui-rich-text__text elements - these are handled separately
+      if (el.className && typeof el.className === 'string' && el.className.includes('wixui-rich-text__text')) {
+        return;
+      }
+      processStartAlignedElements(el);
+    });
   };
 
   const processElement = (el) => {
@@ -97,9 +138,6 @@
 
     // Fix CSS custom property --namePriceLayoutAlignItems
     fixAlignItemsProperty(el);
-
-    // Handle wixui-rich-text__text child elements (disabled - can't reliably detect start vs right)
-    // processRichTextChildren(el);
 
     const style = window.getComputedStyle(el);
     const ml = style.marginLeft;
@@ -133,18 +171,26 @@
           processElement(node);
           node.querySelectorAll(dynamicSelector).forEach(processElement);
           
-          // Process rich text elements (disabled - can't reliably detect start vs right)
-          // processRichTextChildren(node);
-          // if (node.querySelectorAll) {
-          //   const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, s.wixui-rich-text__text';
-          //   node.querySelectorAll(richTextSelector).forEach(processRichTextChildren);
-          // }
+          // Process wixui-rich-text__text elements
+          processRichTextElement(node);
+          if (node.querySelectorAll) {
+            const richTextSelector = 'p.wixui-rich-text__text, h1.wixui-rich-text__text, h2.wixui-rich-text__text, h3.wixui-rich-text__text, h4.wixui-rich-text__text, h5.wixui-rich-text__text, h6.wixui-rich-text__text, ul.wixui-rich-text__text, ol.wixui-rich-text__text, span.wixui-rich-text__text';
+            node.querySelectorAll(richTextSelector).forEach(processRichTextElement);
+          }
           
-          // Process text tags with text-align: start
-          processStartAlignedElements(node);
+          // Process text tags with text-align: start (skip wixui-rich-text__text elements)
+          if (!node.className || typeof node.className !== 'string' || !node.className.includes('wixui-rich-text__text')) {
+            processStartAlignedElements(node);
+          }
           if (node.querySelectorAll) {
             const textTagSelector = 'p, h1, h2, h3, h4, h5, h6, ul, ol';
-            node.querySelectorAll(textTagSelector).forEach(processStartAlignedElements);
+            node.querySelectorAll(textTagSelector).forEach(el => {
+              // Skip wixui-rich-text__text elements - these are handled separately
+              if (el.className && typeof el.className === 'string' && el.className.includes('wixui-rich-text__text')) {
+                return;
+              }
+              processStartAlignedElements(el);
+            });
           }
           
           // Process style elements
@@ -199,7 +245,7 @@
   const revealBody = () => {
     document.querySelectorAll(dynamicSelector).forEach(processElement);
     processStyleElements();
-    // processAllRichTextElements(); // Disabled - can't reliably detect start vs right without expensive operations
+    processAllRichTextElements(); // Process wixui-rich-text__text elements
     processAllStartAlignedElements();
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
