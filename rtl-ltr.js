@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v22');
+  console.log('rtl-ltr.js v23');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -70,6 +70,9 @@
         // If text-align is 'right', change it to 'left' (LTR right becomes RTL left)
         if (computedTextAlign && computedTextAlign.trim() === 'right') {
           el.style.setProperty('text-align', 'left', 'important');
+        } else if (computedTextAlign && computedTextAlign.trim() === 'center') {
+          // Preserve center alignment - do not change
+          // No action needed
         } else {
           // Otherwise, set text-align: right for RTL elements
           el.style.setProperty('text-align', 'right', 'important');
