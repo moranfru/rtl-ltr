@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v21');
+  console.log('rtl-ltr.js v22');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -52,19 +52,28 @@
     if (!allowedTags.includes(tagName)) return;
     
     try {
-      // First, remove inline style text-align: left if present (Wix viewer quirk)
-      const inlineTextAlign = el.style.textAlign;
-      if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'left') {
-        el.style.removeProperty('text-align');
-      }
-      
-      // Check computed style for text-align: right
       const computedStyle = window.getComputedStyle(el);
-      const computedTextAlign = computedStyle.getPropertyValue('text-align');
+      const direction = computedStyle.getPropertyValue('direction');
       
-      // If text-align is 'right', change it to 'left'
-      if (computedTextAlign && computedTextAlign.trim() === 'right') {
-        el.style.setProperty('text-align', 'left', 'important');
+      // Only process if element has direction: rtl
+      if (direction && direction.trim() === 'rtl') {
+        // First, remove inline style text-align: left if present (Wix viewer quirk)
+        const inlineTextAlign = el.style.textAlign;
+        if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'left') {
+          el.style.removeProperty('text-align');
+        }
+        
+        // Re-check computed style after removing inline left (in case it changed)
+        const updatedComputedStyle = window.getComputedStyle(el);
+        const computedTextAlign = updatedComputedStyle.getPropertyValue('text-align');
+        
+        // If text-align is 'right', change it to 'left' (LTR right becomes RTL left)
+        if (computedTextAlign && computedTextAlign.trim() === 'right') {
+          el.style.setProperty('text-align', 'left', 'important');
+        } else {
+          // Otherwise, set text-align: right for RTL elements
+          el.style.setProperty('text-align', 'right', 'important');
+        }
       }
       
       // Mark as processed
