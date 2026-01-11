@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v28');
+  console.log('rtl-ltr.js v29');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -250,6 +250,37 @@
     });
   };
 
+  // Handle background media layers: mirror images within bgLayers
+  //backround media
+  const processBackgroundMedia = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlBackgroundMediaFixed === 'true') return;
+    
+    // Check if element has data-hook="bgLayers"
+    if (!el.hasAttribute || !el.hasAttribute('data-hook')) return;
+    if (el.getAttribute('data-hook') !== 'bgLayers') return;
+    
+    try {
+      // Find the nested image within this specific layer
+      const img = el.querySelector('img');
+      
+      // Apply the horizontal flip if an image exists
+      if (img) {
+        img.style.transform = 'scaleX(-1)';
+        el.dataset.rtlBackgroundMediaFixed = 'true';
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all background media layers in the document
+  const processAllBackgroundMedia = () => {
+    document.querySelectorAll('[data-hook="bgLayers"]').forEach(processBackgroundMedia);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -420,6 +451,12 @@
             });
           }
           
+          // Process background media layers
+          processBackgroundMedia(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('[data-hook="bgLayers"]').forEach(processBackgroundMedia);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -516,6 +553,7 @@
     processAllInfoElementText(); // Process info-element-text elements
     processAllAccordionButtons(); // Process accordion button elements
     processAllVectorImages(); // Process wixui-vector-image elements
+    processAllBackgroundMedia(); // Process background media layers
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
