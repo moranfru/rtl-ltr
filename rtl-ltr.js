@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v29');
+  console.log('rtl-ltr.js v30');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -281,6 +281,35 @@
     document.querySelectorAll('[data-hook="bgLayers"]').forEach(processBackgroundMedia);
   };
 
+  // Handle wixui-mirror-img elements: mirror nested img with scaleX(-1)
+  const processMirrorImg = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlMirrorImgFixed === 'true') return;
+    
+    // Check if element has wixui-mirror-img class
+    if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-mirror-img')) {
+      return;
+    }
+    
+    try {
+      // Find nested img element
+      const imgElement = el.querySelector('img');
+      if (imgElement) {
+        imgElement.style.transform = 'scaleX(-1)';
+        el.dataset.rtlMirrorImgFixed = 'true';
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all wixui-mirror-img elements in the document
+  const processAllMirrorImgs = () => {
+    document.querySelectorAll('.wixui-mirror-img').forEach(processMirrorImg);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -457,6 +486,12 @@
             node.querySelectorAll('[data-hook="bgLayers"]').forEach(processBackgroundMedia);
           }
           
+          // Process wixui-mirror-img elements
+          processMirrorImg(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('.wixui-mirror-img').forEach(processMirrorImg);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -554,6 +589,7 @@
     processAllAccordionButtons(); // Process accordion button elements
     processAllVectorImages(); // Process wixui-vector-image elements
     processAllBackgroundMedia(); // Process background media layers
+    processAllMirrorImgs(); // Process wixui-mirror-img elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
