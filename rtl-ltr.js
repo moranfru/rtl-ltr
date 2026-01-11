@@ -1,9 +1,10 @@
 
 (function() {
-  console.log('rtl-ltr.js v23');
+  console.log('rtl-ltr.js v24');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
+  const MENU_BREAKPOINT = 750; // Viewport width breakpoint in pixels for menu margin/padding swap
   // ---------------------
 
   // 1. URL & QUERY CHECKS
@@ -135,6 +136,75 @@
     });
   };
 
+  // Check if viewport width is above breakpoint
+  const isAboveBreakpoint = () => {
+    return window.innerWidth > MENU_BREAKPOINT;
+  };
+
+  // Handle menu elements: swap margins/paddings on parent.parent for breakpoint > 750px
+  const processMenuElement = (el) => {
+    if (!el || !el.className || typeof el.className !== 'string') return;
+    
+    // Check if element has wixui-horizontal-menu or wixui-menu class
+    const hasMenuClass = el.className.includes('wixui-horizontal-menu') || el.className.includes('wixui-menu');
+    if (!hasMenuClass) return;
+    
+    // Skip if already processed (we'll track by the parent.parent element)
+    if (el.dataset.rtlMenuProcessed === 'true') return;
+    
+    // Only process if viewport is above breakpoint
+    if (!isAboveBreakpoint()) {
+      return;
+    }
+    
+    try {
+      // Go 2 levels up: parent.parent
+      const parent = el.parentElement;
+      if (!parent) return;
+      
+      const grandParent = parent.parentElement;
+      if (!grandParent) return;
+      
+      // Skip if grandparent already processed
+      if (grandParent.dataset.rtlMenuGrandParentSwapped === 'true') return;
+      
+      const style = window.getComputedStyle(grandParent);
+      const ml = style.marginLeft;
+      const mr = style.marginRight;
+      const pl = style.paddingLeft;
+      const pr = style.paddingRight;
+      
+      // Swap Margins if either side has a value
+      if (ml !== '0px' || mr !== '0px') {
+        grandParent.style.setProperty('margin-left', mr, 'important');
+        grandParent.style.setProperty('margin-right', ml, 'important');
+      }
+      
+      // Swap Paddings if either side has a value
+      if (pl !== '0px' || pr !== '0px') {
+        grandParent.style.setProperty('padding-left', pr, 'important');
+        grandParent.style.setProperty('padding-right', pl, 'important');
+      }
+      
+      // Mark as processed
+      grandParent.dataset.rtlMenuGrandParentSwapped = 'true';
+      el.dataset.rtlMenuProcessed = 'true';
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all menu elements
+  const processAllMenuElements = () => {
+    // Only process if viewport is above breakpoint
+    if (!isAboveBreakpoint()) {
+      return;
+    }
+    
+    const menuSelector = '.wixui-horizontal-menu, .wixui-menu';
+    document.querySelectorAll(menuSelector).forEach(processMenuElement);
+  };
+
   const processElement = (el) => {
     if (!el || !el.className || typeof el.className !== 'string') return;
     
@@ -205,6 +275,13 @@
             });
           }
           
+          // Process menu elements
+          processMenuElement(node);
+          if (node.querySelectorAll) {
+            const menuSelector = '.wixui-horizontal-menu, .wixui-menu';
+            node.querySelectorAll(menuSelector).forEach(processMenuElement);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -253,14 +330,56 @@
     });
   };
 
+  // Revert menu swaps when viewport goes below breakpoint
+  const revertMenuSwaps = () => {
+    // Find all elements that were swapped
+    const swappedElements = document.querySelectorAll('[data-rtl-menu-grand-parent-swapped="true"]');
+    swappedElements.forEach(el => {
+      // Remove inline margin and padding styles to revert to original
+      el.style.removeProperty('margin-left');
+      el.style.removeProperty('margin-right');
+      el.style.removeProperty('padding-left');
+      el.style.removeProperty('padding-right');
+      // Remove the dataset flag so it can be processed again if viewport increases
+      el.removeAttribute('data-rtl-menu-grand-parent-swapped');
+    });
+    
+    // Also clear the menu element flags
+    const menuElements = document.querySelectorAll('[data-rtl-menu-processed="true"]');
+    menuElements.forEach(el => {
+      el.removeAttribute('data-rtl-menu-processed');
+    });
+  };
+
+  // Handle viewport resize for menu breakpoint
+  let resizeTimeout;
+  const handleResize = () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const isAbove = isAboveBreakpoint();
+      
+      if (isAbove) {
+        // Viewport is above breakpoint - process menu elements
+        processAllMenuElements();
+      } else {
+        // Viewport is below breakpoint - revert menu swaps
+        revertMenuSwaps();
+      }
+    }, 100); // Debounce resize events
+  };
+
   // 4. REVEAL BODY
   const revealBody = () => {
     document.querySelectorAll(dynamicSelector).forEach(processElement);
     processStyleElements();
     processAllRichTextElements(); // Process wixui-rich-text__text elements
     processAllStartAlignedElements();
+    processAllMenuElements(); // Process menu elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
+    
+    // Add resize listener for menu breakpoint handling
+    window.addEventListener('resize', handleResize);
   };
 
   const failSafe = setTimeout(revealBody, 3000);
