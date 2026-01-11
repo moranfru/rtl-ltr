@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v25');
+  console.log('rtl-ltr.js v26');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -136,7 +136,7 @@
     });
   };
 
-  // Handle info-element-text elements: swap text-align right to left for RTL
+  // Handle info-element-text elements: swap text-align (if not centered) and swap direction
   //pro gallery
   const processInfoElementText = (el) => {
     if (!el) return;
@@ -154,11 +154,22 @@
       const direction = computedStyle.getPropertyValue('direction');
       const textAlign = computedStyle.getPropertyValue('text-align');
       
-      // Only process if element has direction: rtl and text-align: right
-      if (direction && direction.trim() === 'rtl' && textAlign && textAlign.trim() === 'right') {
-        el.style.setProperty('text-align', 'left', 'important');
-        el.dataset.rtlInfoElementTextFixed = 'true';
+      // Swap direction: ltr -> rtl, rtl -> ltr
+      if (direction && direction.trim() === 'ltr') {
+        el.style.setProperty('direction', 'rtl', 'important');
+      } else if (direction && direction.trim() === 'rtl') {
+        el.style.setProperty('direction', 'ltr', 'important');
       }
+      
+      // Swap text-align if not centered: left -> right, right -> left, preserve center
+      if (textAlign && textAlign.trim() === 'left') {
+        el.style.setProperty('text-align', 'right', 'important');
+      } else if (textAlign && textAlign.trim() === 'right') {
+        el.style.setProperty('text-align', 'left', 'important');
+      }
+      // If center, do nothing (preserve it)
+      
+      el.dataset.rtlInfoElementTextFixed = 'true';
     } catch (error) {
       // Silently ignore errors
     }
