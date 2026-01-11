@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v24');
+  console.log('rtl-ltr.js v25');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -134,6 +134,39 @@
       }
       processStartAlignedElements(el);
     });
+  };
+
+  // Handle info-element-text elements: swap text-align right to left for RTL
+  //pro gallery
+  const processInfoElementText = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlInfoElementTextFixed === 'true') return;
+    
+    // Check if element has info-element-text class
+    if (!el.className || typeof el.className !== 'string' || !el.className.includes('info-element-text')) {
+      return;
+    }
+    
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      const direction = computedStyle.getPropertyValue('direction');
+      const textAlign = computedStyle.getPropertyValue('text-align');
+      
+      // Only process if element has direction: rtl and text-align: right
+      if (direction && direction.trim() === 'rtl' && textAlign && textAlign.trim() === 'right') {
+        el.style.setProperty('text-align', 'left', 'important');
+        el.dataset.rtlInfoElementTextFixed = 'true';
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all info-element-text elements in the document
+  const processAllInfoElementText = () => {
+    document.querySelectorAll('.info-element-text').forEach(processInfoElementText);
   };
 
   // Check if viewport width is above breakpoint
@@ -282,6 +315,12 @@
             node.querySelectorAll(menuSelector).forEach(processMenuElement);
           }
           
+          // Process info-element-text elements
+          processInfoElementText(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('.info-element-text').forEach(processInfoElementText);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -375,6 +414,7 @@
     processAllRichTextElements(); // Process wixui-rich-text__text elements
     processAllStartAlignedElements();
     processAllMenuElements(); // Process menu elements
+    processAllInfoElementText(); // Process info-element-text elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
