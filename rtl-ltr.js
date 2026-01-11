@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v26');
+  console.log('rtl-ltr.js v27');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -180,6 +180,36 @@
     document.querySelectorAll('.info-element-text').forEach(processInfoElementText);
   };
 
+  // Handle button elements with AccordionContainer className prefix: set direction rtl
+  //accordion title
+  const processAccordionButton = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlAccordionFixed === 'true') return;
+    
+    // Check if element is a button
+    if (!el.tagName || el.tagName.toLowerCase() !== 'button') return;
+    
+    // Check if element has className with prefix 'AccordionContainer'
+    if (!el.className || typeof el.className !== 'string') return;
+    
+    const hasAccordionPrefix = el.className.split(' ').some(cls => cls.startsWith('AccordionContainer'));
+    if (!hasAccordionPrefix) return;
+    
+    try {
+      el.style.setProperty('direction', 'rtl', 'important');
+      el.dataset.rtlAccordionFixed = 'true';
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all accordion button elements in the document
+  const processAllAccordionButtons = () => {
+    document.querySelectorAll('button[class*="AccordionContainer"]').forEach(processAccordionButton);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -332,6 +362,12 @@
             node.querySelectorAll('.info-element-text').forEach(processInfoElementText);
           }
           
+          // Process accordion button elements
+          processAccordionButton(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('button[class*="AccordionContainer"]').forEach(processAccordionButton);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -426,6 +462,7 @@
     processAllStartAlignedElements();
     processAllMenuElements(); // Process menu elements
     processAllInfoElementText(); // Process info-element-text elements
+    processAllAccordionButtons(); // Process accordion button elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
