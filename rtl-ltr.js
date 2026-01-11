@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v27');
+  console.log('rtl-ltr.js v28');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -210,6 +210,46 @@
     document.querySelectorAll('button[class*="AccordionContainer"]').forEach(processAccordionButton);
   };
 
+  // Handle wixui-vector-image elements: mirror nested svg with scaleX(-1)
+  const processVectorImage = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlVectorImageFixed === 'true') return;
+    
+    // Check if element has wixui-vector-image class
+    if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-vector-image')) {
+      return;
+    }
+    
+    // Skip if element also has wixui-ignore-svg-rtl-swap class
+    if (el.className.includes('wixui-ignore-svg-rtl-swap')) {
+      return;
+    }
+    
+    try {
+      // Find nested svg element
+      const svgElement = el.querySelector('svg');
+      if (svgElement) {
+        svgElement.style.transform = 'scaleX(-1)';
+        el.dataset.rtlVectorImageFixed = 'true';
+      }
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all wixui-vector-image elements in the document
+  const processAllVectorImages = () => {
+    document.querySelectorAll('.wixui-vector-image').forEach(el => {
+      // Skip if element also has wixui-ignore-svg-rtl-swap class
+      if (el.className && typeof el.className === 'string' && el.className.includes('wixui-ignore-svg-rtl-swap')) {
+        return;
+      }
+      processVectorImage(el);
+    });
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -368,6 +408,18 @@
             node.querySelectorAll('button[class*="AccordionContainer"]').forEach(processAccordionButton);
           }
           
+          // Process wixui-vector-image elements
+          processVectorImage(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('.wixui-vector-image').forEach(el => {
+              // Skip if element also has wixui-ignore-svg-rtl-swap class
+              if (el.className && typeof el.className === 'string' && el.className.includes('wixui-ignore-svg-rtl-swap')) {
+                return;
+              }
+              processVectorImage(el);
+            });
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -463,6 +515,7 @@
     processAllMenuElements(); // Process menu elements
     processAllInfoElementText(); // Process info-element-text elements
     processAllAccordionButtons(); // Process accordion button elements
+    processAllVectorImages(); // Process wixui-vector-image elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
