@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v32');
+  console.log('rtl-ltr.js v33');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -310,7 +310,7 @@
     document.querySelectorAll('.wixui-mirror-img').forEach(processMirrorImg);
   };
 
-  // Handle header elements: set direction ltr
+  // Handle header elements: set direction rtl
   const processHeaderElement = (el) => {
     if (!el) return;
     
@@ -321,7 +321,7 @@
     if (!el.tagName || el.tagName.toLowerCase() !== 'header') return;
     
     try {
-      el.style.setProperty('direction', 'ltr', 'important');
+      el.style.setProperty('direction', 'rtl', 'important');
       el.dataset.rtlHeaderFixed = 'true';
     } catch (error) {
       // Silently ignore errors
