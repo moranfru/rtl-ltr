@@ -2,7 +2,7 @@
 (function() {
   console.log('rtl-to-ltr-ic.js v1');
   // --- CONFIGURATION ---
-  const LTR_LANGS = ['en'];
+  const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
   const MENU_BREAKPOINT = 750; // Viewport width breakpoint in pixels for menu margin/padding swap
   // ---------------------
@@ -12,35 +12,35 @@
   if (urlParams.get('custom_mirroring') === 'false') return;
 
   const pathSegments = window.location.pathname.split('/').filter(Boolean);
-  const isLTRLang = pathSegments.some(segment => LTR_LANGS.includes(segment.toLowerCase()));
-  if (!isLTRLang) return;
+  const isRTLLang = pathSegments.some(segment => RTL_LANGS.includes(segment.toLowerCase()));
+  if (!isRTLLang) return;
 
   // 2. BLOCK LAYOUT SHIFT (Hide Body)
   const styleHide = document.createElement('style');
-  styleHide.id = 'ltr-load-shield';
+  styleHide.id = 'rtl-load-shield';
   styleHide.innerHTML = `body { opacity: 0 !important; transition: none !important; }`;
   document.head.appendChild(styleHide);
 
-  // Fix CSS custom property --namePriceLayoutAlignItems (inverted: flex-start -> flex-end)
+  // Fix CSS custom property --namePriceLayoutAlignItems
   const fixAlignItemsProperty = (el) => {
     try {
       const computedStyle = window.getComputedStyle(el);
       const alignItemsValue = computedStyle.getPropertyValue('--namePriceLayoutAlignItems');
       
-      if (alignItemsValue && alignItemsValue.trim() === 'flex-start') {
-        el.style.setProperty('--namePriceLayoutAlignItems', 'flex-end', 'important');
+      if (alignItemsValue && alignItemsValue.trim() === 'flex-end') {
+        el.style.setProperty('--namePriceLayoutAlignItems', 'flex-start', 'important');
       }
     } catch (error) {
       // Silently ignore errors
     }
   };
 
-  // Handle wixui-rich-text__text elements: swap text-align left to right, remove inline text-align right
+  // Handle wixui-rich-text__text elements: swap text-align right to left, remove inline text-align left
   const processRichTextElement = (el) => {
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrRichTextFixed === 'true') return;
+    if (el.dataset.rtlRichTextFixed === 'true') return;
     
     // Check if element has wixui-rich-text__text class
     if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-rich-text__text')) {
@@ -56,32 +56,32 @@
       const computedStyle = window.getComputedStyle(el);
       const direction = computedStyle.getPropertyValue('direction');
       
-      // Only process if element has direction: ltr
-      if (direction && direction.trim() === 'ltr') {
-        // First, remove inline style text-align: right if present (Wix viewer quirk)
+      // Only process if element has direction: rtl
+      if (direction && direction.trim() === 'rtl') {
+        // First, remove inline style text-align: left if present (Wix viewer quirk)
         const inlineTextAlign = el.style.textAlign;
-        if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'right') {
+        if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'left') {
           el.style.removeProperty('text-align');
         }
         
-        // Re-check computed style after removing inline right (in case it changed)
+        // Re-check computed style after removing inline left (in case it changed)
         const updatedComputedStyle = window.getComputedStyle(el);
         const computedTextAlign = updatedComputedStyle.getPropertyValue('text-align');
         
-        // If text-align is 'left', change it to 'right' (RTL left becomes LTR right)
-        if (computedTextAlign && computedTextAlign.trim() === 'left') {
-          el.style.setProperty('text-align', 'right', 'important');
+        // If text-align is 'right', change it to 'left' (LTR right becomes RTL left)
+        if (computedTextAlign && computedTextAlign.trim() === 'right') {
+          el.style.setProperty('text-align', 'left', 'important');
         } else if (computedTextAlign && computedTextAlign.trim() === 'center') {
           // Preserve center alignment - do not change
           // No action needed
         } else {
-          // Otherwise, set text-align: left for LTR elements
-          el.style.setProperty('text-align', 'left', 'important');
+          // Otherwise, set text-align: right for RTL elements
+          el.style.setProperty('text-align', 'right', 'important');
         }
       }
       
       // Mark as processed
-      el.dataset.ltrRichTextFixed = 'true';
+      el.dataset.rtlRichTextFixed = 'true';
     } catch (error) {
       // Silently ignore errors
     }
@@ -93,7 +93,7 @@
     document.querySelectorAll(richTextSelector).forEach(processRichTextElement);
   };
 
-  // Handle text tags with text-align: start - swap to left for LTR
+  // Handle text tags with text-align: start - swap to right for RTL
   const processStartAlignedElements = (el) => {
     if (!el) return;
     
@@ -108,16 +108,16 @@
     if (!allowedTags.includes(tagName)) return;
     
     // Skip if already processed
-    if (el.dataset.ltrStartAligned === 'true') return;
+    if (el.dataset.rtlStartAligned === 'true') return;
     
     try {
       const computedStyle = window.getComputedStyle(el);
       const textAlign = computedStyle.getPropertyValue('text-align');
       
-      // If computed text-align is 'start', set to 'left' for LTR
+      // If computed text-align is 'start', set to 'right' for RTL
       if (textAlign && textAlign.trim() === 'start') {
-        el.style.setProperty('text-align', 'left', 'important');
-        el.dataset.ltrStartAligned = 'true';
+        el.style.setProperty('text-align', 'right', 'important');
+        el.dataset.rtlStartAligned = 'true';
       }
     } catch (error) {
       // Silently ignore errors
@@ -142,7 +142,7 @@
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrInfoElementTextFixed === 'true') return;
+    if (el.dataset.rtlInfoElementTextFixed === 'true') return;
     
     // Check if element has info-element-text class
     if (!el.className || typeof el.className !== 'string' || !el.className.includes('info-element-text')) {
@@ -154,11 +154,11 @@
       const direction = computedStyle.getPropertyValue('direction');
       const textAlign = computedStyle.getPropertyValue('text-align');
       
-      // Swap direction: rtl -> ltr, ltr -> rtl
-      if (direction && direction.trim() === 'rtl') {
-        el.style.setProperty('direction', 'ltr', 'important');
-      } else if (direction && direction.trim() === 'ltr') {
+      // Swap direction: ltr -> rtl, rtl -> ltr
+      if (direction && direction.trim() === 'ltr') {
         el.style.setProperty('direction', 'rtl', 'important');
+      } else if (direction && direction.trim() === 'rtl') {
+        el.style.setProperty('direction', 'ltr', 'important');
       }
       
       // Swap text-align if not centered: left -> right, right -> left, preserve center
@@ -169,7 +169,7 @@
       }
       // If center, do nothing (preserve it)
       
-      el.dataset.ltrInfoElementTextFixed = 'true';
+      el.dataset.rtlInfoElementTextFixed = 'true';
     } catch (error) {
       // Silently ignore errors
     }
@@ -180,13 +180,13 @@
     document.querySelectorAll('.info-element-text').forEach(processInfoElementText);
   };
 
-  // Handle button elements with AccordionContainer className prefix: set direction ltr
+  // Handle button elements with AccordionContainer className prefix: set direction rtl
   //accordion title
   const processAccordionButton = (el) => {
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrAccordionFixed === 'true') return;
+    if (el.dataset.rtlAccordionFixed === 'true') return;
     
     // Check if element is a button
     if (!el.tagName || el.tagName.toLowerCase() !== 'button') return;
@@ -198,8 +198,8 @@
     if (!hasAccordionPrefix) return;
     
     try {
-      el.style.setProperty('direction', 'ltr', 'important');
-      el.dataset.ltrAccordionFixed = 'true';
+      el.style.setProperty('direction', 'rtl', 'important');
+      el.dataset.rtlAccordionFixed = 'true';
     } catch (error) {
       // Silently ignore errors
     }
@@ -215,7 +215,7 @@
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrVectorImageFixed === 'true') return;
+    if (el.dataset.rtlVectorImageFixed === 'true') return;
     
     // Check if element has wixui-vector-image class
     if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-vector-image')) {
@@ -232,7 +232,7 @@
       const svgElement = el.querySelector('svg');
       if (svgElement) {
         svgElement.style.transform = 'scaleX(-1)';
-        el.dataset.ltrVectorImageFixed = 'true';
+        el.dataset.rtlVectorImageFixed = 'true';
       }
     } catch (error) {
       // Silently ignore errors
@@ -256,7 +256,7 @@
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrBackgroundMediaFixed === 'true') return;
+    if (el.dataset.rtlBackgroundMediaFixed === 'true') return;
     
     // Check if element has data-hook="bgLayers"
     if (!el.hasAttribute || !el.hasAttribute('data-hook')) return;
@@ -269,7 +269,7 @@
       // Apply the horizontal flip if an image exists
       if (img) {
         img.style.transform = 'scaleX(-1)';
-        el.dataset.ltrBackgroundMediaFixed = 'true';
+        el.dataset.rtlBackgroundMediaFixed = 'true';
       }
     } catch (error) {
       // Silently ignore errors
@@ -286,7 +286,7 @@
     if (!el) return;
     
     // Skip if already processed
-    if (el.dataset.ltrMirrorImgFixed === 'true') return;
+    if (el.dataset.rtlMirrorImgFixed === 'true') return;
     
     // Check if element has wixui-mirror-img class
     if (!el.className || typeof el.className !== 'string' || !el.className.includes('wixui-mirror-img')) {
@@ -298,7 +298,7 @@
       const imgElement = el.querySelector('img');
       if (imgElement) {
         imgElement.style.transform = 'scaleX(-1)';
-        el.dataset.ltrMirrorImgFixed = 'true';
+        el.dataset.rtlMirrorImgFixed = 'true';
       }
     } catch (error) {
       // Silently ignore errors
@@ -324,7 +324,7 @@
     if (!hasMenuClass) return;
     
     // Skip if already processed (we'll track by the parent.parent element)
-    if (el.dataset.ltrMenuProcessed === 'true') return;
+    if (el.dataset.rtlMenuProcessed === 'true') return;
     
     // Only process if viewport is above breakpoint
     if (!isAboveBreakpoint()) {
@@ -340,7 +340,7 @@
       if (!grandParent) return;
       
       // Skip if grandparent already processed
-      if (grandParent.dataset.ltrMenuGrandParentSwapped === 'true') return;
+      if (grandParent.dataset.rtlMenuGrandParentSwapped === 'true') return;
       
       const style = window.getComputedStyle(grandParent);
       const ml = style.marginLeft;
@@ -361,8 +361,8 @@
       }
       
       // Mark as processed
-      grandParent.dataset.ltrMenuGrandParentSwapped = 'true';
-      el.dataset.ltrMenuProcessed = 'true';
+      grandParent.dataset.rtlMenuGrandParentSwapped = 'true';
+      el.dataset.rtlMenuProcessed = 'true';
     } catch (error) {
       // Silently ignore errors
     }
@@ -383,14 +383,14 @@
     if (!el || !el.className || typeof el.className !== 'string') return;
     
     // Only check if THIS script already processed it
-    if (el.dataset.ltrSwapped === 'true') return;
+    if (el.dataset.rtlSwapped === 'true') return;
 
     // Check if the element matches our target prefixes
     const hasPrefix = TARGET_PREFIXES.some(prefix => el.className.includes(prefix));
     if (!hasPrefix) return;
 
-    // Apply LTR internal direction
-    el.style.setProperty('direction', 'ltr', 'important');
+    // Apply RTL internal direction
+    el.style.setProperty('direction', 'rtl', 'important');
 
     // Fix CSS custom property --namePriceLayoutAlignItems
     fixAlignItemsProperty(el);
@@ -413,7 +413,7 @@
     }
 
     // Mark as processed by this script
-    el.dataset.ltrSwapped = 'true';
+    el.dataset.rtlSwapped = 'true';
   };
 
   // Construct selector: [class^="prefix"], [class*=" prefix"]
@@ -497,16 +497,16 @@
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
             styleElements.forEach(styleEl => {
               let cssText = styleEl.textContent || styleEl.innerHTML;
-              if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-start')) {
-                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-start/g, '--namePriceLayoutAlignItems: flex-end');
-                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-start\s*;/g, '--namePriceLayoutAlignItems: flex-end;');
+              if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-end')) {
+                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end/g, '--namePriceLayoutAlignItems: flex-start');
+                cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end\s*;/g, '--namePriceLayoutAlignItems: flex-start;');
                 
                 if (styleEl.textContent !== undefined) {
                   styleEl.textContent = cssText;
                 } else {
                   styleEl.innerHTML = cssText;
                 }
-                styleEl.dataset.ltrProcessed = 'true';
+                styleEl.dataset.rtlProcessed = 'true';
               }
             });
           }
@@ -523,19 +523,19 @@
   // Process style elements to fix CSS custom properties
   const processStyleElements = () => {
     document.querySelectorAll('style').forEach(styleEl => {
-      if (styleEl.dataset.ltrProcessed === 'true') return;
+      if (styleEl.dataset.rtlProcessed === 'true') return;
       
       let cssText = styleEl.textContent || styleEl.innerHTML;
-      if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-start')) {
-        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-start/g, '--namePriceLayoutAlignItems: flex-end');
-        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-start\s*;/g, '--namePriceLayoutAlignItems: flex-end;');
+      if (cssText.includes('--namePriceLayoutAlignItems') && cssText.includes('flex-end')) {
+        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end/g, '--namePriceLayoutAlignItems: flex-start');
+        cssText = cssText.replace(/--namePriceLayoutAlignItems:\s*flex-end\s*;/g, '--namePriceLayoutAlignItems: flex-start;');
         
         if (styleEl.textContent !== undefined) {
           styleEl.textContent = cssText;
         } else {
           styleEl.innerHTML = cssText;
         }
-        styleEl.dataset.ltrProcessed = 'true';
+        styleEl.dataset.rtlProcessed = 'true';
       }
     });
   };
@@ -543,7 +543,7 @@
   // Revert menu swaps when viewport goes below breakpoint
   const revertMenuSwaps = () => {
     // Find all elements that were swapped
-    const swappedElements = document.querySelectorAll('[data-ltr-menu-grand-parent-swapped="true"]');
+    const swappedElements = document.querySelectorAll('[data-rtl-menu-grand-parent-swapped="true"]');
     swappedElements.forEach(el => {
       // Remove inline margin and padding styles to revert to original
       el.style.removeProperty('margin-left');
@@ -551,13 +551,13 @@
       el.style.removeProperty('padding-left');
       el.style.removeProperty('padding-right');
       // Remove the dataset flag so it can be processed again if viewport increases
-      el.removeAttribute('data-ltr-menu-grand-parent-swapped');
+      el.removeAttribute('data-rtl-menu-grand-parent-swapped');
     });
     
     // Also clear the menu element flags
-    const menuElements = document.querySelectorAll('[data-ltr-menu-processed="true"]');
+    const menuElements = document.querySelectorAll('[data-rtl-menu-processed="true"]');
     menuElements.forEach(el => {
-      el.removeAttribute('data-ltr-menu-processed');
+      el.removeAttribute('data-rtl-menu-processed');
     });
   };
 
@@ -590,7 +590,7 @@
     processAllVectorImages(); // Process wixui-vector-image elements
     processAllBackgroundMedia(); // Process background media layers
     processAllMirrorImgs(); // Process wixui-mirror-img elements
-    const shield = document.getElementById('ltr-load-shield');
+    const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
     // Add resize listener for menu breakpoint handling
