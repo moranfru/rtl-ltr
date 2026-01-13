@@ -389,6 +389,9 @@
     const hasPrefix = TARGET_PREFIXES.some(prefix => el.className.includes(prefix));
     if (!hasPrefix) return;
 
+    // Skip if element has wixui-ignore-box-rtl-swap class
+    if (el.className.includes('wixui-ignore-box-rtl-swap')) return;
+
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
 
