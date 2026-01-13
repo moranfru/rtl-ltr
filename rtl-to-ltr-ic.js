@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v2');
+  console.log('rtl-to-ltr-ic.js v3');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -411,6 +411,15 @@
     // Check if the element matches our target prefixes
     const hasPrefix = TARGET_PREFIXES.some(prefix => el.className.includes(prefix));
     if (!hasPrefix) return;
+
+    // Handle pinned elements containers
+    //handle pinned elements containers
+    if (el.className.includes('pinned-swap')) {
+      const parent = el.parentElement;
+      if (parent && parent.id && parent.id.endsWith('-pinned-layer')) {
+        parent.style.setProperty('direction', 'rtl', 'important');
+      }
+    }
 
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
