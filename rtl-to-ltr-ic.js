@@ -310,6 +310,29 @@
     document.querySelectorAll('.wixui-mirror-img').forEach(processMirrorImg);
   };
 
+  // Handle header elements: set direction ltr
+  const processHeaderElement = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlHeaderFixed === 'true') return;
+    
+    // Check if element is a header
+    if (!el.tagName || el.tagName.toLowerCase() !== 'header') return;
+    
+    try {
+      el.style.setProperty('direction', 'ltr', 'important');
+      el.dataset.rtlHeaderFixed = 'true';
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all header elements in the document
+  const processAllHeaderElements = () => {
+    document.querySelectorAll('header').forEach(processHeaderElement);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -388,9 +411,6 @@
     // Check if the element matches our target prefixes
     const hasPrefix = TARGET_PREFIXES.some(prefix => el.className.includes(prefix));
     if (!hasPrefix) return;
-
-    // Skip if element has wixui-ignore-box-rtl-swap class
-    if (el.className.includes('wixui-ignore-box-rtl-swap')) return;
 
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
@@ -495,6 +515,12 @@
             node.querySelectorAll('.wixui-mirror-img').forEach(processMirrorImg);
           }
           
+          // Process header elements
+          processHeaderElement(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('header').forEach(processHeaderElement);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -593,6 +619,7 @@
     processAllVectorImages(); // Process wixui-vector-image elements
     processAllBackgroundMedia(); // Process background media layers
     processAllMirrorImgs(); // Process wixui-mirror-img elements
+    processAllHeaderElements(); // Process header elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
