@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v3');
+  console.log('rtl-to-ltr-ic.js v4');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -420,6 +420,9 @@
         parent.style.setProperty('direction', 'rtl', 'important');
       }
     }
+
+    // Skip if element has rtl-box-skip class
+    if (el.className.includes('rtl-box-skip')) return;
 
     // Apply RTL internal direction
     el.style.setProperty('direction', 'rtl', 'important');
