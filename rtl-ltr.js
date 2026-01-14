@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v35');
+  console.log('rtl-ltr.js v36');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -53,11 +53,15 @@
     if (!allowedTags.includes(tagName)) return;
     
     try {
+      // Get original direction before changing it
       const computedStyle = window.getComputedStyle(el);
-      const direction = computedStyle.getPropertyValue('direction');
+      const originalDirection = computedStyle.getPropertyValue('direction');
       
-      // Only process if element has direction: rtl
-      if (direction && direction.trim() === 'rtl') {
+      // Set direction ltr to override general layout instructions and allow en text to appear correctly in hebrew design
+      el.style.setProperty('direction', 'ltr', 'important');
+      
+      // Only process text-align if element originally had direction: rtl
+      if (originalDirection && originalDirection.trim() === 'rtl') {
         // First, remove inline style text-align: left if present (Wix viewer quirk)
         const inlineTextAlign = el.style.textAlign;
         if (inlineTextAlign && inlineTextAlign.trim().toLowerCase() === 'left') {
