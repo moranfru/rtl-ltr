@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-ltr.js v36');
+  console.log('rtl-ltr.js v37');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['he'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -349,6 +349,19 @@
     // Check if element has wixui-horizontal-menu or wixui-menu class
     const hasMenuClass = el.className.includes('wixui-horizontal-menu') || el.className.includes('wixui-menu');
     if (!hasMenuClass) return;
+    
+    // For wixui-horizontal-menu, change direction rtl to ltr
+    if (el.className.includes('wixui-horizontal-menu')) {
+      try {
+        const computedStyle = window.getComputedStyle(el);
+        const direction = computedStyle.getPropertyValue('direction');
+        if (direction && direction.trim() === 'rtl') {
+          el.style.setProperty('direction', 'ltr', 'important');
+        }
+      } catch (error) {
+        // Silently ignore errors
+      }
+    }
     
     // Skip if already processed (we'll track by the parent.parent element)
     if (el.dataset.rtlMenuProcessed === 'true') return;
