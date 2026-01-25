@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v7');
+  console.log('rtl-to-ltr-ic.js v8');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -365,6 +365,70 @@
     document.querySelectorAll('[class*="SelectionTagsList"][class*="__labelAndTagsList"]').forEach(processSelectionTagsListElement);
   };
 
+  // Handle popup container: hide, set direction rtl, swap direct children margins/paddings
+  const processPopupContainer = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlPopupFixed === 'true') return;
+    
+    // Check if element has data-block-level-container="PopupContainer"
+    if (!el.hasAttribute || !el.hasAttribute('data-block-level-container')) return;
+    if (el.getAttribute('data-block-level-container') !== 'PopupContainer') return;
+    
+    try {
+      // Hide the popup temporarily
+      const originalDisplay = window.getComputedStyle(el).display;
+      el.style.visibility = 'hidden';
+      
+      // Set direction rtl on the popup container
+      el.style.setProperty('direction', 'rtl', 'important');
+      
+      // Process each direct child - swap margins and paddings
+      Array.from(el.children).forEach(child => {
+        if (!child || child.nodeType !== 1) return;
+        
+        // Skip if already processed
+        if (child.dataset.rtlPopupChildSwapped === 'true') return;
+        
+        const style = window.getComputedStyle(child);
+        const ml = style.marginLeft;
+        const mr = style.marginRight;
+        const pl = style.paddingLeft;
+        const pr = style.paddingRight;
+        
+        // Swap Margins if either side has a value
+        if (ml !== '0px' || mr !== '0px') {
+          child.style.setProperty('margin-left', mr, 'important');
+          child.style.setProperty('margin-right', ml, 'important');
+        }
+        
+        // Swap Paddings if either side has a value
+        if (pl !== '0px' || pr !== '0px') {
+          child.style.setProperty('padding-left', pr, 'important');
+          child.style.setProperty('padding-right', pl, 'important');
+        }
+        
+        // Mark child as processed
+        child.dataset.rtlPopupChildSwapped = 'true';
+      });
+      
+      // Reveal the popup after processing
+      el.style.visibility = '';
+      
+      // Mark popup as processed
+      el.dataset.rtlPopupFixed = 'true';
+    } catch (error) {
+      // Silently ignore errors but ensure visibility is restored
+      el.style.visibility = '';
+    }
+  };
+
+  // Process all popup containers in the document
+  const processAllPopupContainers = () => {
+    document.querySelectorAll('[data-block-level-container="PopupContainer"]').forEach(processPopupContainer);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -584,6 +648,12 @@
             node.querySelectorAll('[class*="SelectionTagsList"][class*="__labelAndTagsList"]').forEach(processSelectionTagsListElement);
           }
           
+          // Process popup containers
+          processPopupContainer(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('[data-block-level-container="PopupContainer"]').forEach(processPopupContainer);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -684,6 +754,7 @@
     processAllMirrorImgs(); // Process wixui-mirror-img elements
     processAllHeaderElements(); // Process header elements
     processAllSelectionTagsListElements(); // Process SelectionTagsList elements
+    processAllPopupContainers(); // Process popup containers
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
