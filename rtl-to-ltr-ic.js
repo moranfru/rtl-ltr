@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v6');
+  console.log('rtl-to-ltr-ic.js v7');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -337,6 +337,34 @@
     document.querySelectorAll('header').forEach(processHeaderElement);
   };
 
+  // Handle SelectionTagsList elements: set direction ltr
+  const processSelectionTagsListElement = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlSelectionTagsListFixed === 'true') return;
+    
+    // Check if element has className matching pattern SelectionTagsList{digits}__labelAndTagsList
+    if (!el.className || typeof el.className !== 'string') return;
+    
+    const hasSelectionTagsListClass = el.className.split(' ').some(cls => 
+      /^SelectionTagsList\d+__labelAndTagsList$/.test(cls)
+    );
+    if (!hasSelectionTagsListClass) return;
+    
+    try {
+      el.style.setProperty('direction', 'ltr', 'important');
+      el.dataset.rtlSelectionTagsListFixed = 'true';
+    } catch (error) {
+      // Silently ignore errors
+    }
+  };
+
+  // Process all SelectionTagsList elements in the document
+  const processAllSelectionTagsListElements = () => {
+    document.querySelectorAll('[class*="SelectionTagsList"][class*="__labelAndTagsList"]').forEach(processSelectionTagsListElement);
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -550,6 +578,12 @@
             node.querySelectorAll('header').forEach(processHeaderElement);
           }
           
+          // Process SelectionTagsList elements
+          processSelectionTagsListElement(node);
+          if (node.querySelectorAll) {
+            node.querySelectorAll('[class*="SelectionTagsList"][class*="__labelAndTagsList"]').forEach(processSelectionTagsListElement);
+          }
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -649,6 +683,7 @@
     processAllBackgroundMedia(); // Process background media layers
     processAllMirrorImgs(); // Process wixui-mirror-img elements
     processAllHeaderElements(); // Process header elements
+    processAllSelectionTagsListElements(); // Process SelectionTagsList elements
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
