@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v8');
+  console.log('rtl-to-ltr-ic.js v9');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -383,6 +383,25 @@
       
       // Set direction rtl on the popup container
       el.style.setProperty('direction', 'rtl', 'important');
+      
+      // Swap margins and paddings on the popup container itself
+      const containerStyle = window.getComputedStyle(el);
+      const containerMl = containerStyle.marginLeft;
+      const containerMr = containerStyle.marginRight;
+      const containerPl = containerStyle.paddingLeft;
+      const containerPr = containerStyle.paddingRight;
+      
+      // Swap Container Margins if either side has a value
+      if (containerMl !== '0px' || containerMr !== '0px') {
+        el.style.setProperty('margin-left', containerMr, 'important');
+        el.style.setProperty('margin-right', containerMl, 'important');
+      }
+      
+      // Swap Container Paddings if either side has a value
+      if (containerPl !== '0px' || containerPr !== '0px') {
+        el.style.setProperty('padding-left', containerPr, 'important');
+        el.style.setProperty('padding-right', containerPl, 'important');
+      }
       
       // Process each direct child - swap margins and paddings
       Array.from(el.children).forEach(child => {
