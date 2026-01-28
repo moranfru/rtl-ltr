@@ -1,6 +1,6 @@
 
 (function() {
-  console.log('rtl-to-ltr-ic.js v9');
+  console.log('rtl-to-ltr-ic.js v10');
   // --- CONFIGURATION ---
   const RTL_LANGS = ['en'];
   const TARGET_PREFIXES = ['wixui-', 'StylableHorizontalMenu'];
@@ -448,6 +448,57 @@
     document.querySelectorAll('[data-block-level-container="PopupContainer"]').forEach(processPopupContainer);
   };
 
+  // Handle scroll gallery: reverse horizontal slide direction
+  const processScrollGallery = (el) => {
+    if (!el) return;
+    
+    // Skip if already processed
+    if (el.dataset.rtlScrollGalleryFixed === 'true') return;
+    
+    // Check if element id is comp-mj6x08kv (or add check for specific pattern)
+    if (!el.id || el.id !== 'comp-mj6x08kv') return;
+    
+    // Set up a MutationObserver to watch for transform changes
+    const transformObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+          const transform = el.style.transform;
+          if (transform && transform.includes('translate')) {
+            // Extract translateX value using regex
+            const match = transform.match(/translate\((-?\d+(?:\.\d+)?)(%|px)/);
+            if (match) {
+              const value = parseFloat(match[1]);
+              const unit = match[2];
+              // Negate the value to reverse direction
+              const negatedValue = -value;
+              // Replace with negated value
+              const newTransform = transform.replace(/translate\((-?\d+(?:\.\d+)?)(%|px)/, `translate(${negatedValue}${unit}`);
+              if (newTransform !== transform) {
+                el.style.transform = newTransform;
+              }
+            }
+          }
+        }
+      });
+    });
+    
+    // Start observing
+    transformObserver.observe(el, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+    
+    el.dataset.rtlScrollGalleryFixed = 'true';
+  };
+
+  // Process all scroll gallery elements
+  const processAllScrollGalleries = () => {
+    const gallery = document.getElementById('comp-mj6x08kv');
+    if (gallery) {
+      processScrollGallery(gallery);
+    }
+  };
+
   // Check if viewport width is above breakpoint
   const isAboveBreakpoint = () => {
     return window.innerWidth > MENU_BREAKPOINT;
@@ -673,6 +724,9 @@
             node.querySelectorAll('[data-block-level-container="PopupContainer"]').forEach(processPopupContainer);
           }
           
+          // Process scroll gallery
+          processScrollGallery(node);
+          
           // Process style elements
           if (node.tagName === 'STYLE' || node.querySelectorAll) {
             const styleElements = node.tagName === 'STYLE' ? [node] : node.querySelectorAll('style');
@@ -774,6 +828,7 @@
     processAllHeaderElements(); // Process header elements
     processAllSelectionTagsListElements(); // Process SelectionTagsList elements
     processAllPopupContainers(); // Process popup containers
+    processAllScrollGalleries(); // Process scroll galleries
     const shield = document.getElementById('rtl-load-shield');
     if (shield) shield.remove();
     
